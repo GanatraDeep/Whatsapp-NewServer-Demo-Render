@@ -6,6 +6,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -80,7 +81,7 @@ const createSession = async (sessionName) => {
                 dataPath: path.join(sessionsDir, sanitizedClientId)
             }),
             puppeteer: {
-                headless: true,
+                headless: 'new',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
@@ -89,10 +90,17 @@ const createSession = async (sessionName) => {
                     '--no-first-run',
                     '--no-zygote',
                     '--disable-gpu',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--disable-extensions',
                     '--disable-background-timer-throttling',
                     '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding'
-                ]
+                    '--disable-renderer-backgrounding',
+                    '--disable-ipc-flooding-protection',
+                    '--single-process', // Important for VPS
+                    '--memory-pressure-off'
+                ],
+                executablePath: '/usr/bin/chromium-browser' // Use system Chrome
             }
         });
 
@@ -500,15 +508,19 @@ const NGROK_DOMAIN = 'related-locally-lamprey.ngrok-free.app';
 // Function to start ngrok as a child process
 const startNgrok = (port) => {
     console.log('Starting ngrok tunnel...');
-    
-    const ngrokProcess = spawn('ngrok', [
+
+    const ngrokArgs = [
         'http', 
         port.toString(), 
         '--authtoken', 
-        NGROK_AUTH_TOKEN,
-        '--domain',
-        NGROK_DOMAIN
-    ]);
+        process.env.NGROK_AUTH_TOKEN || NGROK_AUTH_TOKEN
+    ];
+    
+    if (process.env.NGROK_DOMAIN || NGROK_DOMAIN) {
+        ngrokArgs.push('--domain', process.env.NGROK_DOMAIN || NGROK_DOMAIN);
+    }
+    
+    const ngrokProcess = spawn('ngrok', ngrokArgs);
     
     ngrokProcess.stdout.on('data', (data) => {
         console.log(`ngrok stdout: ${data}`);
