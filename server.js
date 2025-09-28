@@ -1,6 +1,7 @@
 const express = require('express');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const { spawn } = require('child_process');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -22,25 +23,29 @@ if (!fs.existsSync(sessionsDir)) {
 
 // Helper function to sanitize session names for clientId
 const sanitizeSessionName = (sessionName) => {
+    // Replace @ and . with underscores, remove other special characters
     return sessionName
         .replace(/@/g, '_at_')
         .replace(/\./g, '_dot_')
         .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '');
+        .replace(/_+/g, '_') // Replace multiple underscores with single
+        .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
 };
 
 // Helper function to get the actual session name used in clients object
 const getActualSessionName = (requestedSessionName) => {
+    // First check if the exact session name exists
     if (clients[requestedSessionName]) {
         return requestedSessionName;
     }
     
+    // If not found, try the sanitized version
     const sanitized = sanitizeSessionName(requestedSessionName);
     if (clients[sanitized]) {
         return sanitized;
     }
     
+    // Check for common mappings
     const commonMappings = {
         'divtech6@gmail.com': 'divtech6_at_gmail_dot_com',
         'letssizzleit@gmail.com': 'letssizzleit_at_gmail_dot_com',
@@ -51,76 +56,11 @@ const getActualSessionName = (requestedSessionName) => {
         return commonMappings[requestedSessionName];
     }
     
+    // Return null if no session found
     return null;
 };
 
-// Get Puppeteer configuration based on environment
-const getPuppeteerConfig = () => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const browserlessUrl = process.env.BROWSERLESS_URL;
-    const browserlessToken = process.env.BROWSERLESS_TOKEN;
-    
-    // Option 1: Use Browserless.io service
-    if (browserlessUrl && browserlessToken) {
-        console.log('Using Browserless.io service');
-        return {
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--disable-gpu'
-            ],
-            // Connect to browserless WebSocket endpoint
-            browserWSEndpoint: `${browserlessUrl}?token=${browserlessToken}`
-        };
-    }
-    
-    // Option 2: Use Puppeteer with minimal Chrome (for platforms like Railway)
-    if (isProduction) {
-        console.log('Using production Puppeteer config');
-        return {
-            headless: true,
-            executablePath: process.env.GOOGLE_CHROME_BIN || '/usr/bin/google-chrome-stable',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process',
-                '--disable-gpu',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection',
-                '--memory-pressure-off'
-            ]
-        };
-    }
-    
-    // Option 3: Development configuration
-    console.log('Using development Puppeteer config');
-    return {
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu'
-        ]
-    };
-};
-
-// Enhanced session creation with browser service support
+// Enhanced session creation with better error handling
 const createSession = async (sessionName) => {
     if (clients[sessionName]) {
         console.log(`Session ${sessionName} already exists.`);
@@ -130,21 +70,30 @@ const createSession = async (sessionName) => {
     try {
         console.log(`Creating WhatsApp session: ${sessionName}`);
         
+        // Sanitize session name for clientId
         const sanitizedClientId = sanitizeSessionName(sessionName);
         console.log(`Using sanitized clientId: ${sanitizedClientId}`);
-        
-        const puppeteerConfig = getPuppeteerConfig();
         
         const client = new Client({
             authStrategy: new LocalAuth({
                 clientId: sanitizedClientId,
                 dataPath: path.join(sessionsDir, sanitizedClientId)
             }),
-            puppeteer: puppeteerConfig,
-            // Add retry and timeout configurations
-            qrMaxRetries: 5,
-            authTimeoutMs: 60000,
-            restartOnAuthFail: true
+            puppeteer: {
+                headless: true,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding'
+                ]
+            }
         });
 
         // QR Code event
@@ -176,25 +125,19 @@ const createSession = async (sessionName) => {
         client.on('disconnected', (reason) => {
             console.log(`Session ${sessionName} disconnected:`, reason);
             clientStatus[sessionName] = 'disconnected';
+            // Clean up the client
             if (clients[sessionName]) {
                 delete clients[sessionName];
             }
         });
 
-        // Message event
+        // Message event (optional - for incoming messages)
         client.on('message', async (message) => {
             console.log(`[${sessionName}] Received message from ${message.from}: ${message.body}`);
         });
 
-        // Initialize the client with timeout
-        const initTimeout = setTimeout(() => {
-            console.error(`Session ${sessionName} initialization timeout`);
-            clientStatus[sessionName] = 'timeout';
-        }, 60000);
-
+        // Initialize the client
         await client.initialize();
-        clearTimeout(initTimeout);
-        
         clients[sessionName] = client;
         clientStatus[sessionName] = 'initializing';
 
@@ -208,13 +151,18 @@ const createSession = async (sessionName) => {
 
 // Helper function to format phone number
 const formatPhoneNumber = (number) => {
+    // Convert to string first to handle numbers passed as integers
     const numberStr = String(number);
+    
+    // Remove any non-digit characters
     const cleaned = numberStr.replace(/\D/g, '');
     
+    // Validate that we have a valid number
     if (!cleaned || cleaned.length < 10) {
         throw new Error('Invalid phone number format');
     }
     
+    // If it doesn't start with country code, add India code (91)
     if (!cleaned.startsWith('91') && cleaned.length === 10) {
         return `91${cleaned}@c.us`;
     } else if (cleaned.startsWith('91') && cleaned.length === 12) {
@@ -222,6 +170,7 @@ const formatPhoneNumber = (number) => {
     } else if (cleaned.length === 10) {
         return `91${cleaned}@c.us`;
     } else {
+        // For other country codes or lengths, use as is
         return `${cleaned}@c.us`;
     }
 };
@@ -229,11 +178,7 @@ const formatPhoneNumber = (number) => {
 // Helper function to download media from URL
 const downloadMedia = async (url) => {
     try {
-        const response = await axios.get(url, { 
-            responseType: 'arraybuffer',
-            timeout: 30000,
-            maxContentLength: 50 * 1024 * 1024 // 50MB limit
-        });
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
         const buffer = Buffer.from(response.data);
         const contentType = response.headers['content-type'] || 'application/octet-stream';
         return MessageMedia.fromBuffer(buffer, contentType);
@@ -251,6 +196,7 @@ app.post('/send-message', async (req, res) => {
     }
 
     try {
+        // Get the actual session name used internally
         const actualSessionName = getActualSessionName(sessionName);
         if (!actualSessionName) {
             return res.status(400).json({ 
@@ -260,6 +206,7 @@ app.post('/send-message', async (req, res) => {
         
         let client = clients[actualSessionName];
         
+        // Check if client exists and is ready
         if (!client || clientStatus[actualSessionName] !== 'ready') {
             return res.status(400).json({ 
                 error: `Session ${sessionName} is not ready. Status: ${clientStatus[actualSessionName] || 'not_found'}` 
@@ -268,6 +215,7 @@ app.post('/send-message', async (req, res) => {
 
         const formattedNumber = formatPhoneNumber(number);
         
+        // Check if number exists on WhatsApp
         const isRegistered = await client.isRegisteredUser(formattedNumber);
         if (!isRegistered) {
             return res.status(400).json({ error: 'Phone number is not registered on WhatsApp' });
@@ -292,7 +240,7 @@ app.post('/send-unified-message', async (req, res) => {
         caption,
         link,
         title,
-        options
+        options // For polls
     } = req.body;
 
     if (!sessionName || !number || !type) {
@@ -300,6 +248,7 @@ app.post('/send-unified-message', async (req, res) => {
     }
 
     try {
+        // Get the actual session name used internally
         const actualSessionName = getActualSessionName(sessionName);
         if (!actualSessionName) {
             return res.status(400).json({ 
@@ -309,6 +258,7 @@ app.post('/send-unified-message', async (req, res) => {
         
         let client = clients[actualSessionName];
         
+        // Check if client exists and is ready
         if (!client || clientStatus[actualSessionName] !== 'ready') {
             return res.status(400).json({ 
                 error: `Session ${sessionName} is not ready. Status: ${clientStatus[actualSessionName] || 'not_found'}` 
@@ -317,6 +267,7 @@ app.post('/send-unified-message', async (req, res) => {
 
         const formattedNumber = formatPhoneNumber(number);
         
+        // Check if number exists on WhatsApp
         const isRegistered = await client.isRegisteredUser(formattedNumber);
         if (!isRegistered) {
             return res.status(400).json({ error: 'Phone number is not registered on WhatsApp' });
@@ -355,7 +306,34 @@ app.post('/send-unified-message', async (req, res) => {
 
             case 'link':
                 if (!link || !message) throw new Error('Missing "link" or "message" for link preview');
+                const linkMessage = `${message}\n\n${link}`;
                 await client.sendMessage(formattedNumber, message, { linkPreview: true });
+                break;
+
+            case 'location':
+                const { latitude, longitude, name, address } = req.body;
+                if (!latitude || !longitude) throw new Error('Missing latitude or longitude for location');
+                await client.sendMessage(formattedNumber, new Location(latitude, longitude, name || '', address || ''));
+                break;
+
+            case 'contact':
+                const { contactName, contactNumber } = req.body;
+                if (!contactName || !contactNumber) throw new Error('Missing contactName or contactNumber');
+                const contact = await MessageMedia.fromFilePath('./contact.vcf'); // You'd need to create this
+                await client.sendMessage(formattedNumber, contact);
+                break;
+
+            case 'poll':
+                if (!message || !options || !Array.isArray(options)) {
+                    throw new Error('Missing "message" or "options" array for poll type');
+                }
+                try {
+                    await client.sendMessage(formattedNumber, new Poll(message, options));
+                } catch (pollError) {
+                    console.log('Poll creation failed, sending as text:', pollError.message);
+                    const pollText = `${message}\n\n${options.map((opt, idx) => `${idx + 1}. ${opt}`).join('\n')}`;
+                    await client.sendMessage(formattedNumber, pollText);
+                }
                 break;
 
             default:
@@ -369,7 +347,28 @@ app.post('/send-unified-message', async (req, res) => {
     }
 });
 
-// Health check endpoint with browser status
+// Get session QR code endpoint
+app.get('/qr/:sessionName', async (req, res) => {
+    const { sessionName } = req.params;
+    const actualSessionName = getActualSessionName(sessionName);
+    
+    if (!actualSessionName || !clients[actualSessionName]) {
+        return res.status(404).json({ 
+            error: 'Session not found',
+            available: Object.keys(clients)
+        });
+    }
+    
+    const status = clientStatus[actualSessionName];
+    res.json({ 
+        sessionName, 
+        actualSessionName,
+        status,
+        message: status === 'qr_generated' ? 'Check console for QR code' : `Session status: ${status}`
+    });
+});
+
+// Health check endpoint
 app.get('/health', (req, res) => {
     const sessionStatuses = {};
     for (const sessionName of Object.keys(clients)) {
@@ -378,8 +377,6 @@ app.get('/health', (req, res) => {
     
     res.json({
         status: 'running',
-        environment: process.env.NODE_ENV || 'development',
-        browserService: process.env.BROWSERLESS_URL ? 'browserless' : 'local',
         sessions: sessionStatuses,
         timestamp: new Date().toISOString()
     });
@@ -393,6 +390,7 @@ app.post('/create-session', async (req, res) => {
         return res.status(400).json({ error: 'Missing sessionName' });
     }
     
+    // Check if session already exists (either original or sanitized name)
     const existingSession = getActualSessionName(sessionName);
     if (existingSession) {
         return res.status(400).json({ 
@@ -426,6 +424,7 @@ app.delete('/session/:sessionName', async (req, res) => {
             delete clients[actualSessionName];
             delete clientStatus[actualSessionName];
             
+            // Clean up session files
             const sanitizedClientId = sanitizeSessionName(sessionName);
             const sessionPath = path.join(sessionsDir, sanitizedClientId);
             if (fs.existsSync(sessionPath)) {
@@ -470,34 +469,94 @@ app.get('/session/:sessionName/status', (req, res) => {
     });
 });
 
-// Get QR code endpoint
-app.get('/qr/:sessionName', async (req, res) => {
+// Logout session
+app.post('/session/:sessionName/logout', async (req, res) => {
     const { sessionName } = req.params;
-    const actualSessionName = getActualSessionName(sessionName);
     
-    if (!actualSessionName || !clients[actualSessionName]) {
-        return res.status(404).json({ 
-            error: 'Session not found',
-            available: Object.keys(clients)
-        });
+    try {
+        const actualSessionName = getActualSessionName(sessionName);
+        if (actualSessionName && clients[actualSessionName]) {
+            await clients[actualSessionName].logout();
+            res.json({ 
+                success: true, 
+                message: `Session ${sessionName} logged out`,
+                actualSessionName: actualSessionName
+            });
+        } else {
+            res.status(404).json({ 
+                error: 'Session not found',
+                available: Object.keys(clients)
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
-    
-    const status = clientStatus[actualSessionName];
-    res.json({ 
-        sessionName, 
-        actualSessionName,
-        status,
-        message: status === 'qr_generated' ? 'Check console for QR code' : `Session status: ${status}`
-    });
 });
 
 const PORT = process.env.PORT || 3000;
+const NGROK_AUTH_TOKEN = '2vROpWnCYrzxgCFCI0s3AuC5jhB_59HEFp3z2ahdMWhohUabn';
+const NGROK_DOMAIN = 'related-locally-lamprey.ngrok-free.app';
+
+// Function to start ngrok as a child process
+const startNgrok = (port) => {
+    console.log('Starting ngrok tunnel...');
+    
+    const ngrokProcess = spawn('ngrok', [
+        'http', 
+        port.toString(), 
+        '--authtoken', 
+        NGROK_AUTH_TOKEN,
+        '--domain',
+        NGROK_DOMAIN
+    ]);
+    
+    ngrokProcess.stdout.on('data', (data) => {
+        console.log(`ngrok stdout: ${data}`);
+    });
+    
+    ngrokProcess.stderr.on('data', (data) => {
+        console.error(`ngrok stderr: ${data}`);
+    });
+    
+    ngrokProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`ngrok process exited with code ${code}`);
+            console.log('Attempting to start ngrok without domain...');
+            
+            const fallbackProcess = spawn('ngrok', [
+                'http', 
+                port.toString(), 
+                '--authtoken', 
+                NGROK_AUTH_TOKEN
+            ]);
+            
+            fallbackProcess.stdout.on('data', (data) => {
+                console.log(`ngrok fallback stdout: ${data}`);
+            });
+        }
+    });
+    
+    ngrokProcess.on('error', (err) => {
+        console.error('Failed to start ngrok process:', err);
+    });
+    
+    return ngrokProcess;
+};
 
 const startServer = async () => {
     try {
-        console.log('Starting WhatsApp API server...');
-        console.log('Environment:', process.env.NODE_ENV || 'development');
-        console.log('Browser service:', process.env.BROWSERLESS_URL ? 'Browserless.io' : 'Local Puppeteer');
+        console.log('Starting WhatsApp API server with whatsapp-web.js...');
+        
+        // Create WhatsApp sessions
+        console.log('Creating WhatsApp sessions...');
+        await createSession("divtech6_at_gmail_dot_com");
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        await createSession("letssizzleit_at_gmail_dot_com");
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        await createSession("urbananimal-session");
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Start Express server
         const server = app.listen(PORT, () => {
@@ -509,6 +568,13 @@ const startServer = async () => {
             console.log(`- DELETE /session/:sessionName`);
             console.log(`- GET /session/:sessionName/status`);
             console.log(`- GET /health`);
+            
+            // Start ngrok
+            try {
+                startNgrok(PORT);
+            } catch (error) {
+                console.error('Error setting up ngrok:', error);
+            }
         });
         
         // Graceful shutdown

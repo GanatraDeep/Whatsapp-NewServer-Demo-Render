@@ -1,0 +1,18 @@
+2025/09/27-08:12:02.624 4578 Reusing MANIFEST E:\whatsapp-apart-from-venom\sessions\urbananimal-session\session-urbananimal-session\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/27-08:12:02.624 4578 Recovering log #111
+2025/09/27-08:12:02.644 4578 Reusing old log E:\whatsapp-apart-from-venom\sessions\urbananimal-session\session-urbananimal-session\Default\Local Storage\leveldb/000111.log 
+2025/09/27-09:22:18.704 6d4 Level-0 table #115: started
+2025/09/27-09:22:18.728 6d4 Level-0 table #115: 16389 bytes OK
+2025/09/27-09:22:18.745 6d4 Delete type=0 #111
+2025/09/27-09:22:18.745 6d4 Compacting 4@0 + 1@1 files
+2025/09/27-09:22:18.779 6d4 Generated table #116@0: 127 keys, 7209 bytes
+2025/09/27-09:22:18.779 6d4 Compacted 4@0 + 1@1 files => 7209 bytes
+2025/09/27-09:22:18.812 6d4 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/09/27-09:22:18.813 6d4 Delete type=2 #105
+2025/09/27-09:22:18.813 6d4 Delete type=2 #108
+2025/09/27-09:22:18.813 6d4 Delete type=2 #110
+2025/09/27-09:22:18.813 6d4 Delete type=2 #112
+2025/09/27-09:22:18.813 6d4 Delete type=2 #115
+2025/09/27-16:12:37.932 1ad4 Level-0 table #118: started
+2025/09/27-16:12:38.008 1ad4 Level-0 table #118: 14460 bytes OK
+2025/09/27-16:12:38.041 1ad4 Delete type=0 #114

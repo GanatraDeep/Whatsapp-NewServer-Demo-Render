@@ -1,0 +1,12 @@
+2025/09/26-08:07:35.080 1940 Reusing MANIFEST E:\whatsapp-apart-from-venom\sessions\urbananimal-session\session-urbananimal-session\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/26-08:07:35.080 1940 Recovering log #103
+2025/09/26-08:07:35.406 1940 Reusing old log E:\whatsapp-apart-from-venom\sessions\urbananimal-session\session-urbananimal-session\Default\Local Storage\leveldb/000103.log 
+2025/09/26-09:17:50.394 4090 Level-0 table #108: started
+2025/09/26-09:17:50.425 4090 Level-0 table #108: 15536 bytes OK
+2025/09/26-09:17:50.441 4090 Delete type=0 #103
+2025/09/26-14:08:05.047 1820 Level-0 table #110: started
+2025/09/26-14:08:05.079 1820 Level-0 table #110: 16068 bytes OK
+2025/09/26-14:08:05.101 1820 Delete type=0 #107
+2025/09/26-20:48:21.088 2ba4 Level-0 table #112: started
+2025/09/26-20:48:21.159 2ba4 Level-0 table #112: 14817 bytes OK
+2025/09/26-20:48:21.189 2ba4 Delete type=0 #109
