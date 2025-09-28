@@ -561,14 +561,14 @@ const startServer = async () => {
         
         // Create WhatsApp sessions
         console.log('Creating WhatsApp sessions...');
-        await createSession("divtech6_at_gmail_dot_com");
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // await createSession("divtech6_at_gmail_dot_com");
+        // await new Promise(resolve => setTimeout(resolve, 3000));
         
-        await createSession("letssizzleit_at_gmail_dot_com");
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // await createSession("letssizzleit_at_gmail_dot_com");
+        // await new Promise(resolve => setTimeout(resolve, 3000));
         
-        await createSession("urbananimal-session");
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // await createSession("urbananimal-session");
+        // await new Promise(resolve => setTimeout(resolve, 3000));
         
         // Start Express server
         const server = app.listen(PORT, () => {

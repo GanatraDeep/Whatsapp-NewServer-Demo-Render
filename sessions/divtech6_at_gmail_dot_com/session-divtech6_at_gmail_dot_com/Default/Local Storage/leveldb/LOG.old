@@ -1,15 +1,6 @@
-2025/09/26-08:07:08.216 4198 Reusing MANIFEST E:\whatsapp-apart-from-venom\sessions\divtech6_at_gmail_dot_com\session-divtech6_at_gmail_dot_com\Default\Local Storage\leveldb/MANIFEST-000001
-2025/09/26-08:07:08.217 4198 Recovering log #52
-2025/09/26-08:07:08.236 4198 Reusing old log E:\whatsapp-apart-from-venom\sessions\divtech6_at_gmail_dot_com\session-divtech6_at_gmail_dot_com\Default\Local Storage\leveldb/000052.log 
-2025/09/26-21:18:00.373 3dd0 Level-0 table #56: started
-2025/09/26-21:18:00.443 3dd0 Level-0 table #56: 15883 bytes OK
-2025/09/26-21:18:00.475 3dd0 Delete type=0 #52
-2025/09/26-21:18:00.475 3dd0 Compacting 4@0 + 1@1 files
-2025/09/26-21:18:00.572 3dd0 Generated table #57@0: 139 keys, 6732 bytes
-2025/09/26-21:18:00.572 3dd0 Compacted 4@0 + 1@1 files => 6732 bytes
-2025/09/26-21:18:00.599 3dd0 compacted to: files[ 0 1 1 0 0 0 0 ]
-2025/09/26-21:18:00.600 3dd0 Delete type=2 #44
-2025/09/26-21:18:00.600 3dd0 Delete type=2 #47
-2025/09/26-21:18:00.607 3dd0 Delete type=2 #50
-2025/09/26-21:18:00.608 3dd0 Delete type=2 #53
-2025/09/26-21:18:00.608 3dd0 Delete type=2 #56
+2025/09/28-07:24:36.727 5104 Reusing MANIFEST D:\Projects\Node\whatsapp-apart-from-venom\sessions\divtech6_at_gmail_dot_com\session-divtech6_at_gmail_dot_com\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/28-07:24:36.733 5104 Recovering log #36
+2025/09/28-07:24:36.734 5104 Reusing old log D:\Projects\Node\whatsapp-apart-from-venom\sessions\divtech6_at_gmail_dot_com\session-divtech6_at_gmail_dot_com\Default\Local Storage\leveldb/000036.log 
+2025/09/28-07:26:37.696 44d4 Level-0 table #40: started
+2025/09/28-07:26:37.703 44d4 Level-0 table #40: 15976 bytes OK
+2025/09/28-07:26:37.706 44d4 Delete type=0 #36

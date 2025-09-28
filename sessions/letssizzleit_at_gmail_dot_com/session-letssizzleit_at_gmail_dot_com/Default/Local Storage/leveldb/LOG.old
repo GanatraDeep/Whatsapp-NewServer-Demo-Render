@@ -1,9 +1,6 @@
-2025/09/26-08:07:23.269 594 Reusing MANIFEST E:\whatsapp-apart-from-venom\sessions\letssizzleit_at_gmail_dot_com\session-letssizzleit_at_gmail_dot_com\Default\Local Storage\leveldb/MANIFEST-000001
-2025/09/26-08:07:23.270 594 Recovering log #39
-2025/09/26-08:07:23.321 594 Reusing old log E:\whatsapp-apart-from-venom\sessions\letssizzleit_at_gmail_dot_com\session-letssizzleit_at_gmail_dot_com\Default\Local Storage\leveldb/000039.log 
-2025/09/26-10:57:38.406 36a8 Level-0 table #44: started
-2025/09/26-10:57:38.442 36a8 Level-0 table #44: 16251 bytes OK
-2025/09/26-10:57:38.466 36a8 Delete type=0 #39
-2025/09/26-18:58:03.755 f34 Level-0 table #46: started
-2025/09/26-18:58:03.817 f34 Level-0 table #46: 16735 bytes OK
-2025/09/26-18:58:03.858 f34 Delete type=0 #43
+2025/09/28-07:24:46.560 42c0 Reusing MANIFEST D:\Projects\Node\whatsapp-apart-from-venom\sessions\letssizzleit_at_gmail_dot_com\session-letssizzleit_at_gmail_dot_com\Default\Local Storage\leveldb/MANIFEST-000001
+2025/09/28-07:24:46.565 42c0 Recovering log #11
+2025/09/28-07:24:46.565 42c0 Reusing old log D:\Projects\Node\whatsapp-apart-from-venom\sessions\letssizzleit_at_gmail_dot_com\session-letssizzleit_at_gmail_dot_com\Default\Local Storage\leveldb/000011.log 
+2025/09/28-10:55:04.063 3d00 Level-0 table #15: started
+2025/09/28-10:55:04.077 3d00 Level-0 table #15: 17272 bytes OK
+2025/09/28-10:55:04.082 3d00 Delete type=0 #11
